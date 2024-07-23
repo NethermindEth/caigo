@@ -33,7 +33,7 @@ func TestDeclareTransaction(t *testing.T) {
 			},
 			{
 				DeclareTx: BroadcastDeclareTxnV3{
-					DeclareTxnV3: DeclareTxnV3{
+					DeclareTxnV3: &DeclareTxnV3{
 						Type:          TransactionType_Declare,
 						Version:       TransactionV3,
 						Signature:     []*felt.Felt{},
@@ -106,7 +106,7 @@ func TestAddInvokeTransaction(t *testing.T) {
 		"mainnet": {},
 		"mock": {
 			{
-				InvokeTx:     BroadcastInvokev1Txn{InvokeTxnV1{SenderAddress: new(felt.Felt).SetUint64(123)}},
+				InvokeTx:     BroadcastInvokev1Txn{&InvokeTxnV1{SenderAddress: new(felt.Felt).SetUint64(123)}},
 				ExpectedResp: AddInvokeTransactionResponse{&felt.Zero},
 				ExpectedError: &RPCError{
 					Code:    ErrUnexpectedError.Code,
@@ -114,13 +114,13 @@ func TestAddInvokeTransaction(t *testing.T) {
 					Data:    "Something crazy happened"},
 			},
 			{
-				InvokeTx:      BroadcastInvokev1Txn{InvokeTxnV1{}},
+				InvokeTx:      BroadcastInvokev1Txn{&InvokeTxnV1{}},
 				ExpectedResp:  AddInvokeTransactionResponse{utils.TestHexToFelt(t, "0xdeadbeef")},
 				ExpectedError: nil,
 			},
 			{
 				InvokeTx: BroadcastInvokev3Txn{
-					InvokeTxnV3{
+					&InvokeTxnV3{
 						Type:    TransactionType_Invoke,
 						Version: TransactionV3,
 						Signature: []*felt.Felt{
@@ -194,7 +194,7 @@ func TestAddDeployAccountTansaction(t *testing.T) {
 		"mainnet": {},
 		"mock": {
 			{
-				DeployTx: BroadcastDeployAccountTxn{DeployAccountTxn{}},
+				DeployTx: BroadcastDeployAccountTxn{&DeployAccountTxn{}},
 				ExpectedResp: AddDeployAccountTransactionResponse{
 					TransactionHash: utils.TestHexToFelt(t, "0x32b272b6d0d584305a460197aa849b5c7a9a85903b66e9d3e1afa2427ef093e"),
 					ContractAddress: utils.TestHexToFelt(t, "0x0"),
@@ -203,7 +203,7 @@ func TestAddDeployAccountTansaction(t *testing.T) {
 			},
 			{
 				DeployTx: BroadcastDeployAccountTxnV3{
-					DeployAccountTxnV3{
+					&DeployAccountTxnV3{
 						Type:      TransactionType_DeployAccount,
 						Version:   TransactionV3,
 						ClassHash: utils.TestHexToFelt(t, "0x2338634f11772ea342365abd5be9d9dc8a6f44f159ad782fdebd3db5d969738"),

@@ -61,7 +61,7 @@ func main() {
 
 	// Create transaction data
 	tx := rpc.BroadcastDeployAccountTxn{
-		DeployAccountTxn: rpc.DeployAccountTxn{
+		DeployAccountTxn: &rpc.DeployAccountTxn{
 			Nonce:               &felt.Zero, // Contract accounts start with nonce zero.
 			MaxFee:              new(felt.Felt).SetUint64(7268996239700),
 			Type:                rpc.TransactionType_DeployAccount,
@@ -80,7 +80,7 @@ func main() {
 	fmt.Println("PrecomputedAddress:", precomputedAddress)
 
 	// Sign the transaction
-	err = accnt.SignDeployAccountTransaction(context.Background(), &tx.DeployAccountTxn, precomputedAddress)
+	err = accnt.SignDeployAccountTransaction(context.Background(), &tx, precomputedAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -100,7 +100,7 @@ func main() {
 		}
 		tx.MaxFee = new(felt.Felt).SetUint64(newFee + newFee/5) // fee + 20% to be sure
 		// Signing the transaction again
-		err = accnt.SignDeployAccountTransaction(context.Background(), &tx.DeployAccountTxn, precomputedAddress)
+		err = accnt.SignDeployAccountTransaction(context.Background(), &tx, precomputedAddress)
 		if err != nil {
 			panic(err)
 		}

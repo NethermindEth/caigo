@@ -43,7 +43,7 @@ var (
 )
 
 type BroadcastInvokev0Txn struct {
-	InvokeTxnV0
+	*InvokeTxnV0
 }
 
 func (tx BroadcastInvokev0Txn) GetCalldata() []*felt.Felt {
@@ -51,7 +51,7 @@ func (tx BroadcastInvokev0Txn) GetCalldata() []*felt.Felt {
 }
 
 type BroadcastInvokev1Txn struct {
-	InvokeTxnV1
+	*InvokeTxnV1
 }
 
 func (tx BroadcastInvokev1Txn) GetCalldata() []*felt.Felt {
@@ -59,7 +59,7 @@ func (tx BroadcastInvokev1Txn) GetCalldata() []*felt.Felt {
 }
 
 type BroadcastInvokev3Txn struct {
-	InvokeTxnV3
+	*InvokeTxnV3
 }
 
 func (tx BroadcastInvokev3Txn) GetCalldata() []*felt.Felt {
@@ -98,7 +98,7 @@ func (tx BroadcastDeclareTxnV2) GetContractClass() interface{} {
 }
 
 type BroadcastDeclareTxnV3 struct {
-	DeclareTxnV3
+	*DeclareTxnV3
 	ContractClass *ContractClass `json:"contract_class"`
 }
 
@@ -107,7 +107,7 @@ func (tx BroadcastDeclareTxnV3) GetContractClass() interface{} {
 }
 
 type BroadcastDeployAccountTxn struct {
-	DeployAccountTxn
+	*DeployAccountTxn
 }
 
 func (tx BroadcastDeployAccountTxn) GetConstructorCalldata() []*felt.Felt {
@@ -115,7 +115,7 @@ func (tx BroadcastDeployAccountTxn) GetConstructorCalldata() []*felt.Felt {
 }
 
 type BroadcastDeployAccountTxnV3 struct {
-	DeployAccountTxnV3
+	*DeployAccountTxnV3
 }
 
 func (tx BroadcastDeployAccountTxnV3) GetConstructorCalldata() []*felt.Felt {
