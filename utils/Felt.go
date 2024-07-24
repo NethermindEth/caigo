@@ -1,8 +1,11 @@
 package utils
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
+	"regexp"
+	"strings"
 
 	"github.com/NethermindEth/juno/core/felt"
 )
@@ -89,43 +92,113 @@ func FeltArrToBigIntArr(f []*felt.Felt) []*big.Int {
 	return bigArr
 }
 
-// U256ToFelt converts big int an array of Felt objects to represent U256 datat type
+// StringToByteArrFelt converts string to array of Felt objects.
+// The returned array of felts will be of the format
+//
+// [number of felts with 31 characters in length, 31 byte felts..., pending word with max size of 30 bytes, pending words bytes size]
+//
+// For further explanation, refer the [article]
 //
 // Parameters:
-// - num: big.Int
+//
+// - s: string/bytearray to convert
+//
 // Returns:
+//
 // - []*felt.Felt: the array of felt.Felt objects
+//
 // - error: an error, if any
-func U256ToFelt(num *big.Int) ([]*felt.Felt, error) {
-	bytes := num.Bytes()
-	if len(bytes) > 32 {
-		return nil, fmt.Errorf("not a valid U256")
+//
+// [article]: https://docs.starknet.io/architecture-and-concepts/smart-contracts/serialization-of-cairo-types/#serialization_of_byte_arrays
+func StringToByteArrFelt(s string) ([]*felt.Felt, error) {
+	const SHORT_LENGTH = 31
+	exp := fmt.Sprintf(".{1,%d}", SHORT_LENGTH)
+	r := regexp.MustCompile(exp)
+
+	arr := r.FindAllString(s, -1)
+	if len(arr) == 0 {
+		return []*felt.Felt{}, fmt.Errorf("invalid string no matches found, s: %s", s)
 	}
 
-	all := make([]byte, 32)
-	copy(all[32-len(bytes):], bytes[:])
+	hexarr := []string{}
+	var count, size uint64
 
-	least := new(felt.Felt).SetBytes(all[16:])
-	significant := new(felt.Felt).SetBytes(all[0:16])
-	return []*felt.Felt{least, significant}, nil
+	for _, val := range arr {
+		if len(val) == SHORT_LENGTH {
+			count += 1
+		} else {
+			size = uint64(len(val))
+		}
+		hexarr = append(hexarr, "0x"+hex.EncodeToString([]byte(val)))
+	}
+
+	harr, err := HexArrToFelt(hexarr)
+	if err != nil {
+		return nil, err
+	}
+
+	if size == 0 {
+		harr = append(harr, new(felt.Felt).SetUint64(0))
+	}
+
+	harr = append(harr, new(felt.Felt).SetUint64(size))
+	return append([]*felt.Felt{new(felt.Felt).SetUint64(count)}, harr...), nil
 }
 
-// FeltArrToU256 array of Felt objects that represents U256 data type to big.Int
+// ByteArrFeltToString converts array of Felts to string.
+// The input array of felts will be of the format
+//
+// [number of felts with 31 characters in length, 31 byte felts..., pending word with max size of 30 bytes, pending words bytes size]
+//
+// For further explanation, refer the [article]
 //
 // Parameters:
-// - arr: []*felt.Felt
+//
+// - []*felt.Felt: the array of felt.Felt objects
+//
 // Returns:
-// - *big.Int: big.Int representation of U256
+//
+// - s: string/bytearray
+//
 // - error: an error, if any
-func FeltArrToU256(arr []*felt.Felt) (*big.Int, error) {
-	if len(arr) != 2 {
-		return nil, fmt.Errorf("not a valid felt array for U256 conversion")
+//
+// [article]: https://docs.starknet.io/architecture-and-concepts/smart-contracts/serialization-of-cairo-types/#serialization_of_byte_arrays
+func ByteArrFeltToString(arr []*felt.Felt) (string, error) {
+	if len(arr) < 3 {
+		return "", fmt.Errorf("invalid felt array, require atleast 3 elements in array")
 	}
 
-	significant := arr[1].Bytes()
-	least := arr[0].Bytes()
-	res := make([]byte, 32)
-	copy(res[0:16], significant[16:])
-	copy(res[16:], least[16:])
-	return new(big.Int).SetBytes(res), nil
+	count := FeltToBigInt(arr[0]).Uint64()
+	var index uint64
+	var res []string
+	for index = 0; index < count; index++ {
+		f := arr[1+index]
+		s, err := feltToString(f)
+		if err != nil {
+			return "", err
+		}
+		res = append(res, s)
+	}
+
+	pendingWordLength := arr[len(arr)-1]
+	if pendingWordLength.IsZero() {
+		return strings.Join(res, ""), nil
+	}
+
+	pendingWordFelt := arr[1+index]
+	s, err := feltToString(pendingWordFelt)
+	if err != nil {
+		return "", fmt.Errorf("invalid pending word")
+	}
+
+	res = append(res, s)
+	return strings.Join(res, ""), nil
+}
+
+func feltToString(f *felt.Felt) (string, error) {
+	b, err := hex.DecodeString(f.String()[2:])
+	if err != nil {
+		return "", fmt.Errorf("unable to decode to string")
+	}
+	return string(b), nil
 }
