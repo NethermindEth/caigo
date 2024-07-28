@@ -98,9 +98,9 @@ func TestByteArrFeltToString(t *testing.T) {
 }
 
 func TestU256ToFelt(t *testing.T) {
-	// b := new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil)
-	// b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(129), nil)
-	// b2 := b1.Add(b1, b).Add(b1, big.NewInt(20))
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil)
+	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(129), nil)
+	b2 := b1.Add(b1, b).Add(b1, big.NewInt(20))
 
 	var tests = []struct {
 		in  *big.Int
@@ -114,6 +114,10 @@ func TestU256ToFelt(t *testing.T) {
 			in:  new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
 			out: []string{"0x0", "0x1"},
 		},
+		{
+			in:  b2,
+			out: []string{"0x14", "0x3"},
+		},
 	}
 
 	for _, tc := range tests {
@@ -126,6 +130,10 @@ func TestU256ToFelt(t *testing.T) {
 }
 
 func TestFeltArrToU256(t *testing.T) {
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil)
+	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(129), nil)
+	b2 := b1.Add(b1, b).Add(b1, big.NewInt(20))
+
 	var tests = []struct {
 		in  []string
 		out *big.Int
@@ -137,6 +145,10 @@ func TestFeltArrToU256(t *testing.T) {
 		{
 			in:  []string{"0x0", "0x1"},
 			out: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
+		},
+		{
+			in:  []string{"0x14", "0x3"},
+			out: b2,
 		},
 	}
 
