@@ -18,11 +18,7 @@ import (
 	setup "github.com/NethermindEth/starknet.go/examples/internal"
 )
 
-// NOTE : Please add in your keys only for testing purposes, in case of a leak you would potentially lose your funds.
-var (
-	someContract   string = "0x0669e24364ce0ae7ec2864fb03eedbe60cfbc9d1c74438d10fa4b86552907d54" //Replace it with the contract that you want to invoke. In this case, an ERC20
-	contractMethod string = "mint"                                                               //Replace it with the function name that you want to invoke
-)
+// starkli class-by-hash --network sepolia 0x060309f37b2b47b167c41810f0d95b9018ec36a0f1f65b4d5d6bf2f0b7f1fc89 > ./pitchlakeclass.json
 
 func main() {
 	// Load variables from '.env' file
