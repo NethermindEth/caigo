@@ -3,6 +3,7 @@ package account
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/NethermindEth/juno/core/crypto"
@@ -40,7 +41,7 @@ type AccountInterface interface {
 	WaitForTransactionReceipt(ctx context.Context, transactionHash *felt.Felt, pollInterval time.Duration) (*rpc.TransactionReceiptWithBlockInfo, error)
 }
 
-var _ AccountInterface = &Account{}
+// var _ AccountInterface = &Account{}
 var _ rpc.RpcProvider = &Account{}
 
 type Account struct {
@@ -73,6 +74,7 @@ func NewAccount(provider rpc.RpcProvider, accountAddress *felt.Felt, publicKey s
 
 	chainID, err := provider.ChainID(context.Background())
 	if err != nil {
+		fmt.Println("err", err)
 		return nil, err
 	}
 	account.ChainId = new(felt.Felt).SetBytes([]byte(chainID))

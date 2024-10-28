@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"math/big"
-	"strconv"
+	"os"
 	"time"
 
 	"github.com/NethermindEth/juno/core/felt"
@@ -34,6 +37,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Error dialing the RPC provider: %s", err))
 	}
+	fmt.Println(client.SpecVersion(context.Background()))
 
 	// Initialize the account memkeyStore (set public and private keys)
 	ks := account.NewMemKeystore()
@@ -52,6 +56,7 @@ func main() {
 	// Initialize the account
 	accnt, err := account.NewAccount(client, accountAddressInFelt, publicKey, ks, accountCairoVersion)
 	if err != nil {
+		fmt.Println(err.Error())
 		panic(err)
 	}
 
@@ -62,65 +67,55 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	file, err := os.Open("pitchlakeclass.json")
+	if err != nil {
+		log.Fatalf("Failed to open file: %v", err)
+	}
+	defer file.Close()
 
+	// Read the file contents
+	data, err := io.ReadAll(file)
+	if err != nil {
+		log.Fatalf("Failed to read file: %v", err)
+	}
+
+	var classs rpc.ContractClass
+
+	err = json.Unmarshal(data, &classs)
+	if err != nil {
+		log.Fatalf("Failed toUnmarshalUnmarshale: %v", err)
+	}
+	compclasshash, _ := new(felt.Felt).SetString("0x05fb022cff754b819f96b3f7c7731eeb69735bb8f9abe21192d06fd1e34c1c0b") // doesn't matter??
 	// Building the InvokeTx struct
-	InvokeTx := rpc.BroadcastInvokev1Txn{
-		InvokeTxnV1: rpc.InvokeTxnV1{
-			MaxFee:        new(felt.Felt).SetUint64(100000000000000),
-			Version:       rpc.TransactionV1,
-			Nonce:         nonce,
-			Type:          rpc.TransactionType_Invoke,
-			SenderAddress: accnt.AccountAddress,
-		}}
-
-	// Converting the contractAddress from hex to felt
-	contractAddress, err := utils.HexToFelt(someContract)
-	if err != nil {
-		panic(err)
+	declareTxn := rpc.BroadcastDeclareTxnV2{
+		Type:              rpc.TransactionType_Declare,
+		SenderAddress:     accountAddressInFelt,
+		CompiledClassHash: compclasshash,
+		MaxFee:            new(felt.Felt).SetUint64(1234567),
+		Version:           rpc.TransactionV2,
+		Nonce:             nonce,
+		ContractClass:     classs,
 	}
-
-	amount, _ := utils.HexToFelt("0xffffffff")
-	// Building the functionCall struct, where :
-	FnCall := rpc.FunctionCall{
-		ContractAddress:    contractAddress,                               //contractAddress is the contract that we want to call
-		EntryPointSelector: utils.GetSelectorFromNameFelt(contractMethod), //this is the function that we want to call
-		Calldata:           []*felt.Felt{amount, &felt.Zero},              //the calldata necessary to call the function. Here we are passing the "amount" value for the "mint" function
-	}
-
-	// Building the Calldata with the help of FmtCalldata where we pass in the FnCall struct along with the Cairo version
-	InvokeTx.Calldata, err = accnt.FmtCalldata([]rpc.FunctionCall{FnCall})
-	if err != nil {
-		panic(err)
-	}
-
+	classhash, _ := new(felt.Felt).SetString("0x060309f37b2b47b167c41810f0d95b9018ec36a0f1f65b4d5d6bf2f0b7f1fc89")
 	// Signing of the transaction that is done by the account
-	err = accnt.SignInvokeTransaction(context.Background(), &InvokeTx.InvokeTxnV1)
+	tmpdeclare := rpc.DeclareTxnV2{
+		Type:              declareTxn.Type,
+		SenderAddress:     declareTxn.SenderAddress,
+		CompiledClassHash: declareTxn.CompiledClassHash,
+		MaxFee:            declareTxn.MaxFee,
+		Version:           declareTxn.Version,
+		Signature:         declareTxn.Signature,
+		Nonce:             declareTxn.Nonce,
+		ClassHash:         classhash,
+	}
+	err = accnt.SignDeclareTransaction(context.Background(), &tmpdeclare)
 	if err != nil {
 		panic(err)
 	}
-
-	// Estimate the transaction fee
-	feeRes, err := accnt.EstimateFee(context.Background(), []rpc.BroadcastTxn{InvokeTx}, []rpc.SimulationFlag{}, rpc.WithBlockTag("latest"))
-	if err != nil {
-		setup.PanicRPC(err)
-	}
-	estimatedFee := feeRes[0].OverallFee
-	// If the estimated fee is higher than the current fee, let's override it and sign again
-	if estimatedFee.Cmp(InvokeTx.MaxFee) == 1 {
-		newFee, err := strconv.ParseUint(estimatedFee.String(), 0, 64)
-		if err != nil {
-			panic(err)
-		}
-		InvokeTx.MaxFee = new(felt.Felt).SetUint64(newFee + newFee/5) // fee + 20% to be sure
-		// Signing the transaction again
-		err = accnt.SignInvokeTransaction(context.Background(), &InvokeTx.InvokeTxnV1)
-		if err != nil {
-			panic(err)
-		}
-	}
+	declareTxn.Signature = tmpdeclare.Signature
 
 	// After the signing we finally call the AddInvokeTransaction in order to invoke the contract function
-	resp, err := accnt.AddInvokeTransaction(context.Background(), InvokeTx)
+	resp, err := accnt.AddDeclareTransaction(context.Background(), declareTxn)
 	if err != nil {
 		setup.PanicRPC(err)
 	}
